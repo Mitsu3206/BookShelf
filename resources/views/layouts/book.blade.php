@@ -28,6 +28,9 @@
         .home {
             font-size:20pt;
         }
+        .error {
+            color: Red;
+        }
         -->
         </style>
         <meta name="csrf-token" content="{{ csrf_token() }}">

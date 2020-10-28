@@ -14,6 +14,8 @@ class Book extends Model
 
     public static $rules = array(
         'title' => 'required',
+        'author' => 'required',
+        'publisherName' => 'required',
     );
 
     public function setAllDataAttribute(Array $value)

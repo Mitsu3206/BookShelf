@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BookRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Book;
+use Validator;
 use App\RakutenAPIClasses\RakutenAPIService;
 use App\RakutenAPIClasses\RakutenAPIServiceInterface;
 
@@ -48,7 +50,6 @@ class BookController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request, Book::$rules);
         $user = Auth::user();
         $book = new Book;
         $record = $request->all();
@@ -89,7 +90,7 @@ class BookController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request)
+    public function update(BookRequest $request)
     {
         if($request->input('update')){
             $this->validate($request, Book::$rules);
@@ -119,8 +120,10 @@ class BookController extends Controller
     public function destroyBulk(Request $request)
     {
         $ids = $request->all();
-        foreach($ids['id'] as $id){
-            Book::find($id)->delete();
+        if(isset($ids['id']) > 0){
+            foreach($ids['id'] as $id){
+                Book::find($id)->delete();
+            }
         }
 
         return redirect('/bookshelf/index');
@@ -141,6 +144,17 @@ class BookController extends Controller
             return view('book.resultAPI', ['infos' => $infos]);
         }
         else if($request->input('add')){
+            $messages = [
+                'title.required' => 'タイトルは必ず入力して下さい。',
+                'author.required' => '著者名は必ず入力して下さい。',
+                'publisherName.required' => '出版社は必ず入力して下さい。',
+            ];
+            $validator = Validator::make($request->all(), Book::$rules, $messages);
+            if ($validator->fails()){
+                return  redirect('/bookshelf/create')
+                        ->withErrors($validator)
+                        ->withInput();
+            }
             $this->store($request);
             return view('book.create');
         }
@@ -150,13 +164,15 @@ class BookController extends Controller
     {
         $rakutenAPIService = app('App\RakutenAPIClasses\RakutenAPIServiceInterface');
         
-        foreach($request->id as $id){
-            $info = $request->session()->get($id);
-            $user = Auth::user();
-            $book = new Book;
-            $book->all_data = $info;
-            $book->userID = $user->id;
-            $book->save();
+        if(isset($request->id)){
+            foreach($request->id as $id){
+                $info = $request->session()->get($id);
+                $user = Auth::user();
+                $book = new Book;
+                $book->all_data = $info;
+                $book->userID = $user->id;
+                $book->save();
+            }
         }
 
         return view('book.create');
